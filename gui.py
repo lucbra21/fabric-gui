@@ -140,7 +140,7 @@ if st.button("Generar contenido"):
         comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name}'
 
         # Imprimimos el comando
-        st.write("Comando a ejecutar:")
+        st.write("Comando a ejecutar1:")
         st.write(comando)
 
         # Ejecutamos el comando usando 'bash' para interpretar el pipe
@@ -150,7 +150,7 @@ if st.button("Generar contenido"):
             f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name}"
         )
 
-        st.write("Comando a ejecutar:")
+        st.write("Comando a ejecutar2:")
         st.write(comando)
 
         resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
@@ -159,7 +159,7 @@ if st.button("Generar contenido"):
             f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name}"
         )
 
-        st.write("Comando a ejecutar:")
+        st.write("Comando a ejecutar3:")
         st.write(comando)
 
         resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
@@ -167,7 +167,7 @@ if st.button("Generar contenido"):
     if resultado.returncode != 0:
         st.error(f"Error al ejecutar el comando:\n{resultado.stderr}")
     else:
-        st.text("Resultado:")
+        st.text("Resultado4:")
         st.text_area("", value=resultado.stdout, height=300)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

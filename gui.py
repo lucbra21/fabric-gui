@@ -134,10 +134,10 @@ else:  # URL
 if st.button("Generar contenido"):
     if input_type == "Texto":
         # Aseguramos el prompt para manejar caracteres especiales
-        prompt = prompt + '. El texto de la respuesta siempre en español.'
+        # prompt = prompt + '. El texto de la respuesta siempre en español.'
         safe_prompt = shlex.quote(prompt)
 
-        comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name}'
+        comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name} --language=es'
 
         # Imprimimos el comando
         st.write("Comando a ejecutar:")
@@ -147,7 +147,7 @@ if st.button("Generar contenido"):
         resultado = subprocess.run(['bash', '-c', comando], capture_output=True, text=True)
     elif input_type == "YouTube":
         comando = (
-            f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name}"
+            f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
         )
 
         st.write("Comando a ejecutar:")
@@ -156,7 +156,7 @@ if st.button("Generar contenido"):
         resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
     else:  # URL
         comando = (
-            f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name}"
+            f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
         )
 
         st.write("Comando a ejecutar:")

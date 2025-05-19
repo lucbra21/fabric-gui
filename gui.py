@@ -134,7 +134,9 @@ else:  # URL
 if st.button("Generar contenido"):
     if input_type == "Texto":
         # Aseguramos el prompt para manejar caracteres especiales
+        prompt = prompt + '. El texto de la respuesta siempre en español.'
         safe_prompt = shlex.quote(prompt)
+
         comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name}'
 
         # Imprimimos el comando

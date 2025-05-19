@@ -110,7 +110,7 @@ input_type = st.radio("Selecciona el tipo de entrada:", ["Texto", "YouTube", "UR
 fabric_options = get_fabric_options()
 fabric_command = st.selectbox("Selecciona el comando de Fabric:", fabric_options)
 
-fabric_models = ("gpt-4-0125-preview", "gpt-4o-mini", "claude-3-5-sonnet-20240620")
+fabric_models = ("gpt-4o-mini", "gpt-4-0125-preview", "claude-3-5-sonnet-20240620")
 fabric_modelo = st.radio("Selecciona el Modelo de LLM:", fabric_models)
 
 if "] " in fabric_modelo:
@@ -140,7 +140,7 @@ if st.button("Generar contenido"):
         comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name}'
 
         # Imprimimos el comando
-        st.write("Comando a ejecutar1:")
+        st.write("Comando a ejecutar:")
         st.write(comando)
 
         # Ejecutamos el comando usando 'bash' para interpretar el pipe
@@ -150,7 +150,7 @@ if st.button("Generar contenido"):
             f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name}"
         )
 
-        st.write("Comando a ejecutar2:")
+        st.write("Comando a ejecutar:")
         st.write(comando)
 
         resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
@@ -159,7 +159,7 @@ if st.button("Generar contenido"):
             f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name}"
         )
 
-        st.write("Comando a ejecutar3:")
+        st.write("Comando a ejecutar:")
         st.write(comando)
 
         resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
@@ -169,10 +169,8 @@ if st.button("Generar contenido"):
     else:
         st.write("Comando a ejecutar5:")
         st.write(comando)
-        st.write("Resultado5:")
-        st.write(resultado)
 
-        st.text("Resultado4:")
+        st.text("Resultado:")
         st.text_area("", value=resultado.stdout, height=300)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

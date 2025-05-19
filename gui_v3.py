@@ -38,77 +38,53 @@ def get_file_description(filepath):
 
 # Diccionario de descripciones en español para los comandos más comunes de Fabric
 DESCRIPCIONES_ES = {
-    "summarize": "Resume un texto en puntos principales",
-    "extract_wisdom": "Extrae conocimientos y conceptos valiosos",
-    "analyze_claims": "Analiza y evalúa afirmaciones",
-    "improve_writing": "Mejora la calidad y claridad del texto",
-    "explain_code": "Explica código paso a paso",
-    "simplify": "Simplifica contenido complejo",
-    "create_outline": "Crea estructura para un documento",
-    "extract_topics": "Identifica temas principales",
-    "write_essay": "Genera un ensayo estructurado",
-    "write_latex": "Genera documento en formato LaTeX",
-    "create_coding_feature": "Desarrolla código para nuevas funciones",
-    "translate": "Traduce contenido a otro idioma",
-    "extract_action_items": "Identifica tareas y acciones a realizar",
-    "extract_insights": "Extrae observaciones significativas",
-    "create_flashcards": "Genera tarjetas de estudio",
-    "panel_topic_extractor": "Extrae temas para paneles o debates",
-    "create_quiz": "Genera preguntas tipo quiz",
-    "extract_experts": "Identifica expertos mencionados",
-    "evaluate_article": "Evalúa calidad y credibilidad",
-    "improve_seo": "Mejora el contenido para SEO",
-    "extract_key_concepts": "Identifica conceptos fundamentales",
-    "create_metaphors": "Genera metáforas explicativas",
-    "extract_arguments": "Extrae argumentos principales",
-    "write_press_release": "Genera comunicado de prensa",
-    "convert_to_blog": "Reformatea como entrada de blog",
-    "generate_title_ideas": "Propone títulos atractivos",
-    "extract_data": "Extrae datos estructurados",
-    "create_faq": "Genera preguntas frecuentes",
-    "extract_quotes": "Encuentra citas relevantes",
-    "create_presentation": "Genera esquema para presentación",
-    "write_documentation": "Crea documentación técnica",
-    "extract_timeline": "Organiza eventos cronológicamente",
-    "create_story": "Genera narrativa o historia",
-    "comparative_analysis": "Realiza análisis comparativo",
-    "h3_telos": "Desarrolla marco de objetivos y estrategia",
-    "generate_analogies": "Crea analogías explicativas",
-    "identify_trends": "Identifica tendencias y patrones",
+    "summarize": "Resume un texto en puntos principales manteniendo la información clave",
+    "extract_wisdom": "Extrae conocimientos, ideas y conceptos valiosos del contenido",
+    "analyze_claims": "Analiza y evalúa afirmaciones identificando su validez y evidencia",
+    "improve_writing": "Mejora la calidad, claridad y estructura de un texto",
+    "explain_code": "Explica el funcionamiento del código de manera detallada y comprensible",
+    "simplify": "Simplifica contenido complejo haciéndolo más accesible",
+    "create_outline": "Crea una estructura organizada para un documento o texto",
+    "extract_topics": "Identifica y extrae los temas principales del contenido",
+    "write_essay": "Genera un ensayo bien estructurado sobre el tema proporcionado",
+    "write_latex": "Genera un documento en formato LaTeX a partir del contenido",
+    "create_coding_feature": "Desarrolla código para una nueva característica o funcionalidad",
+    "translate": "Traduce contenido a otro idioma preservando el significado original",
+    "extract_action_items": "Identifica tareas y acciones concretas a realizar",
+    "extract_insights": "Extrae observaciones significativas y perspectivas valiosas",
+    "create_flashcards": "Genera tarjetas de estudio con preguntas y respuestas",
+    "panel_topic_extractor": "Extrae temas para discusión en paneles o debates",
+    "create_quiz": "Genera preguntas tipo quiz sobre el contenido",
+    "extract_experts": "Identifica expertos mencionados en el contenido y sus áreas de especialización",
+    "evaluate_article": "Evalúa la calidad y credibilidad de un artículo",
+    "improve_seo": "Mejora el contenido para optimización de motores de búsqueda",
+    "extract_key_concepts": "Identifica y explica los conceptos fundamentales del contenido",
+    "create_metaphors": "Genera metáforas para explicar conceptos complejos",
+    "extract_arguments": "Extrae los principales argumentos y contraargumentos",
+    "write_press_release": "Genera un comunicado de prensa profesional",
+    "convert_to_blog": "Reformatea el contenido como una entrada de blog estructurada",
+    "generate_title_ideas": "Propone títulos atractivos y relevantes para el contenido",
+    "extract_data": "Extrae datos estructurados y cifras importantes",
+    "create_faq": "Genera preguntas frecuentes y sus respuestas",
+    "extract_quotes": "Encuentra y extrae citas relevantes del contenido",
+    "create_presentation": "Genera esquema para una presentación basada en el contenido",
+    "write_documentation": "Crea documentación técnica clara y completa",
+    "extract_timeline": "Organiza eventos en una línea temporal cronológica",
+    "create_story": "Genera una narrativa o historia basada en el contenido",
+    "comparative_analysis": "Realiza un análisis comparativo de distintos elementos",
+    "h3_telos": "Desarrolla un marco de objetivos, propósito y estrategia",
+    "generate_analogies": "Crea analogías para explicar conceptos complejos",
+    "identify_trends": "Identifica tendencias y patrones en los datos o información",
 }
 
 
 @st.cache_data(ttl=3600)  # Cache por una hora
 def get_fabric_options():
-    """Obtiene las opciones de comandos de Fabric."""
     resultado = subprocess.run(["fabric", "-l"], capture_output=True, text=True)
     opciones = [line.strip() for line in resultado.stdout.split("\n") if line.strip()]
     # Filtrar para obtener solo comandos válidos (eliminar encabezados)
     opciones = [opt for opt in opciones if not opt.startswith("Available") and not opt.startswith("==")]
     return opciones
-
-
-def get_fabric_options_with_descriptions():
-    """Obtiene los comandos de Fabric con descripciones en español."""
-    comandos = get_fabric_options()
-    opciones_con_descripcion = []
-    
-    for cmd in comandos:
-        if cmd in DESCRIPCIONES_ES:
-            # Añadir comando con descripción entre paréntesis
-            opciones_con_descripcion.append(f"{cmd} ({DESCRIPCIONES_ES[cmd]})")
-        else:
-            # Para comandos sin descripción, solo añadir el nombre
-            opciones_con_descripcion.append(cmd)
-    
-    return opciones_con_descripcion
-
-
-def extract_command(option_text):
-    """Extrae el comando real (sin descripción) de la opción seleccionada."""
-    if " (" in option_text:
-        return option_text.split(" (")[0]
-    return option_text
 
 
 def markdown_to_pdf(markdown_file, pdf_file):
@@ -178,14 +154,24 @@ if show_files:
 
 input_type = st.radio("Selecciona el tipo de entrada:", ["Texto", "YouTube", "URL"])
 
-# Obtener opciones de Fabric con descripciones
-fabric_options_with_desc = get_fabric_options_with_descriptions()
+# Obtener opciones de Fabric
+fabric_options = get_fabric_options()
 
-# Mostrar desplegable con comandos y descripciones
-selected_option = st.selectbox("Selecciona el comando de Fabric:", fabric_options_with_desc)
+# Mostrar selectbox con un icono de ayuda
+col1, col2 = st.columns([3, 1])
+with col1:
+    fabric_command = st.selectbox("Selecciona el comando de Fabric:", fabric_options)
+with col2:
+    st.markdown('<br>', unsafe_allow_html=True)  # Espacio para alinear con el selectbox
+    with st.expander("ℹ️"):
+        st.markdown("**Ayuda sobre comandos**")
+        for cmd in fabric_options:
+            if cmd in DESCRIPCIONES_ES:
+                st.markdown(f"**{cmd}**: {DESCRIPCIONES_ES[cmd]}")
 
-# Extraer el comando real (sin la descripción)
-fabric_command = extract_command(selected_option)
+# Mostrar la descripción del comando seleccionado
+if fabric_command in DESCRIPCIONES_ES:
+    st.info(f"**{fabric_command}**: {DESCRIPCIONES_ES[fabric_command]}")
 
 # Selección de modelo
 fabric_models = ("gpt-4o-mini", "gpt-4-0125-preview", "claude-3-5-sonnet-20240620")

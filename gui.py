@@ -167,9 +167,7 @@ if st.button("Generar contenido"):
     if resultado.returncode != 0:
         st.error(f"Error al ejecutar el comando:\n{resultado.stderr}")
     else:
-        st.write("Comando a ejecutar5:")
-        st.write(comando)
-
+        
         st.text("Resultado:")
         st.text_area("", value=resultado.stdout, height=300)
 

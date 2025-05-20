@@ -37,7 +37,7 @@ def get_file_description(filepath):
 
 
 # Diccionario de descripciones en español para los comandos más comunes de Fabric
-ESCRIPCIONES_ES = {
+DESCRIPCIONES_ES = {
     # 1-50
     "agility_story": "Genera historias de usuario y criterios de aceptación en formato JSON",
     "ai": "Interpreta preguntas y proporciona respuestas concisas en formato Markdown",

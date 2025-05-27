@@ -44,7 +44,7 @@ DESCRIPCIONES_ES = {
     "analyze_answers": "Evalúa respuestas de cuestionarios según objetivos de aprendizaje",
     "analyze_candidates": "Compara candidatos políticos basándose en temas y políticas clave",
     "analyze_cfp_submission": "Evalúa propuestas de conferencias según claridad y relevancia",
-    "analyse_threat_report_trends": "Extrae tendencias interesantes de informes de amenazas",
+    "analyze_threat_report_trends": "Extrae tendencias interesantes de informes de amenazas",
     "analyze_claims": "Analiza y califica afirmaciones con evidencias y contraargumentos",
     "analyze_comments": "Evalúa comentarios de internet y categoriza su sentimiento",
     "analyze_debate": "Califica debates y proporciona análisis imparcial de argumentos",

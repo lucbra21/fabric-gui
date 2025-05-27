@@ -41,7 +41,7 @@ DESCRIPCIONES_ES = {
     # 1-50
     "agility_story": "Genera historias de usuario y criterios de aceptación en formato JSON",
     "ai": "Interpreta preguntas y proporciona respuestas concisas en formato Markdown",
-    "analyse_answers": "Evalúa respuestas de cuestionarios según objetivos de aprendizaje",
+    "analyze_answers": "Evalúa respuestas de cuestionarios según objetivos de aprendizaje",
     "analyse_candidates": "Compara candidatos políticos basándose en temas y políticas clave",
     "analyse_cfp_submission": "Evalúa propuestas de conferencias según claridad y relevancia",
     "analyse_threat_report_trends": "Extrae tendencias interesantes de informes de amenazas",

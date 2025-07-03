@@ -6,6 +6,8 @@ from datetime import datetime
 import re
 import shlex  # Importamos shlex para manejar el escape de caracteres
 from fpdf import FPDF
+import whisper
+import tempfile
 
 
 class PDF(FPDF):
@@ -34,6 +36,58 @@ def get_file_description(filepath):
     if match:
         return match.group(1).strip()
     return "No se encontró descripción"
+
+
+def transcribir_archivo(archivo, modelo="base"):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+        temp.write(archivo.read())
+        temp_path = temp.name
+    model = whisper.load_model(modelo)
+    result = model.transcribe(temp_path, language="es")
+    os.remove(temp_path)
+    return result["text"]
+
+def generar_srt(archivo, modelo="base"):
+    def format_timestamp(seconds):
+        hours = int(seconds // 3600)
+        minutes = int((seconds % 3600) // 60)
+        secs = int(seconds % 60)
+        millis = int((seconds - int(seconds)) * 1000)
+        return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+        temp.write(archivo.read())
+        temp_path = temp.name
+    model = whisper.load_model(modelo)
+    result = model.transcribe(temp_path, language="es")
+    os.remove(temp_path)
+    segments = result.get("segments", [])
+    srt_content = ""
+    for i, segment in enumerate(segments, 1):
+        start = format_timestamp(segment["start"])
+        end = format_timestamp(segment["end"])
+        text = segment["text"].strip()
+        srt_content += f"{i}\n{start} --> {end}\n{text}\n\n"
+    return srt_content
+
+def generar_subtitulos_txt(archivo, modelo="base"):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+        temp.write(archivo.read())
+        temp_path = temp.name
+    model = whisper.load_model(modelo)
+    result = model.transcribe(temp_path, language="es")
+    os.remove(temp_path)
+    segments = result.get("segments", [])
+    txt_content = "\n".join([segment["text"].strip() for segment in segments])
+    return txt_content
+
+def format_time(seconds):
+    return f"{seconds:.2f} s | {seconds/60:.2f} min | {seconds/3600:.2f} h"
+
+def format_size(bytes_):
+    kb = bytes_ / 1024
+    mb = kb / 1024
+    gb = mb / 1024
+    return f"{bytes_:.0f} bytes | {kb:.2f} KB | {mb:.2f} MB | {gb:.4f} GB"
 
 
 # Diccionario de descripciones en español para los comandos más comunes de Fabric
@@ -331,136 +385,251 @@ def markdown_to_pdf(markdown_file, pdf_file):
 if not os.path.exists("resultados"):
     os.makedirs("resultados")
 
-st.title("Generador de contenido con Fabric AI")
+# Menú de navegación en la barra lateral
+menu_opcion = st.sidebar.radio(
+    "Menú Principal:",
+    ["Fabric", "Trascripción"],
+    index=0
+)
 
-st.sidebar.title("Opciones")
-show_files = st.sidebar.button("Mostrar archivos generados")
 
-if show_files:
-    st.sidebar.write("Archivos generados:")
-    for filename in os.listdir("resultados"):
-        if filename.endswith(".md"):
-            filepath = os.path.join("resultados", filename)
-            description = get_file_description(filepath)
-            st.sidebar.write(f"**{filename}**")
-            st.sidebar.write(description)
+# Mostrar contenido según la opción del menú
+if menu_opcion == "Fabric":
+    
+    # Mostrar opciones de archivos generados en la barra lateral
+    st.sidebar.title("Opciones")
+    show_files = st.sidebar.button("Mostrar archivos generados")
 
-            download_link_md = get_binary_file_downloader_html(filepath, filename)
-            st.sidebar.markdown(download_link_md, unsafe_allow_html=True)
+    if show_files:
+        st.sidebar.write("Archivos generados:")
+        for filename in os.listdir("resultados"):
+            if filename.endswith(".md"):
+                filepath = os.path.join("resultados", filename)
+                description = get_file_description(filepath)
+                st.sidebar.write(f"**{filename}**")
+                st.sidebar.write(description)
 
-            pdf_filename = filename.replace(".md", ".pdf")
-            pdf_filepath = os.path.join("resultados", pdf_filename)
-            markdown_to_pdf(filepath, pdf_filepath)
-            download_link_pdf = get_binary_file_downloader_html(
-                pdf_filepath, pdf_filename
-            )
-            st.sidebar.markdown(download_link_pdf, unsafe_allow_html=True)
+                download_link_md = get_binary_file_downloader_html(filepath, filename)
+                st.sidebar.markdown(download_link_md, unsafe_allow_html=True)
 
-            # Botón para borrar archivos
-            if st.sidebar.button(f"Borrar {filename}"):
-                os.remove(filepath)
-                if os.path.exists(pdf_filepath):
-                    os.remove(pdf_filepath)
-                st.sidebar.write(f"{filename} y su versión PDF han sido borrados.")
+                pdf_filename = filename.replace(".md", ".pdf")
+                pdf_filepath = os.path.join("resultados", pdf_filename)
+                markdown_to_pdf(filepath, pdf_filepath)
+                download_link_pdf = get_binary_file_downloader_html(
+                    pdf_filepath, pdf_filename
+                )
+                st.sidebar.markdown(download_link_pdf, unsafe_allow_html=True)
 
-            st.sidebar.write("---")
+                # Botón para borrar archivos
+                if st.sidebar.button(f"Borrar {filename}"):
+                    os.remove(filepath)
+                    if os.path.exists(pdf_filepath):
+                        os.remove(pdf_filepath)
+                    st.sidebar.write(f"{filename} y su versión PDF han sido borrados.")
 
-input_type = st.radio("Selecciona el tipo de entrada:", ["Texto", "YouTube", "URL"])
+                st.sidebar.write("---")
 
-# Obtener opciones de Fabric con descripciones
-fabric_options_with_desc = get_fabric_options_with_descriptions()
+    input_type = st.radio("Selecciona el tipo de entrada:", ["Texto", "YouTube", "URL"])
 
-# Mostrar desplegable con comandos y descripciones
-selected_option = st.selectbox("Selecciona el comando de Fabric:", fabric_options_with_desc)
+    # Obtener opciones de Fabric con descripciones
+    fabric_options_with_desc = get_fabric_options_with_descriptions()
 
-# Extraer el comando real (sin la descripción)
-fabric_command = extract_command(selected_option)
+    # Mostrar desplegable con comandos y descripciones
+    selected_option = st.selectbox("Selecciona el comando de Fabric:", fabric_options_with_desc)
 
-# Selección de modelo
-fabric_models = ("gpt-4o-mini", "gpt-4-0125-preview", "claude-3-5-sonnet-20240620")
-fabric_modelo = st.radio("Selecciona el Modelo de LLM:", fabric_models)
+    # Extraer el comando real (sin la descripción)
+    fabric_command = extract_command(selected_option)
 
-if "] " in fabric_modelo:
-    _, model_name = fabric_modelo.split("] ", 1)
-else:
-    model_name = fabric_modelo
+    # Selección de modelo
+    fabric_models = ("gpt-4o-mini", "gpt-4-0125-preview", "claude-3-5-sonnet-20240620")
+    fabric_modelo = st.radio("Selecciona el Modelo de LLM:", fabric_models)
 
-# Entradas según tipo seleccionado
-if input_type == "Texto":
-    prompt = st.text_area("Ingresa tu texto:", "Haz un chiste con manzanas", height=150)
-elif input_type == "YouTube":
-    prompt = st.text_input(
-        "Ingresa la URL del video de YouTube:",
-        "https://www.youtube.com/watch?v=5rUa0wGzgdA",
-    )
-else:  # URL
-    prompt = st.text_input(
-        "Ingresa la URL:",
-        "https://medium.com/stackademic/16-killer-web-applications-to-boost-your-workflow-with-ai-38153ace9352",
-    )
+    if "] " in fabric_modelo:
+        _, model_name = fabric_modelo.split("] ", 1)
+    else:
+        model_name = fabric_modelo
 
-# Añadir instrucción para responder en español
-st.write("📝 La respuesta siempre será en español gracias al parámetro `--language=es`")
-
-if st.button("Generar contenido"):
-    with st.spinner("Generando contenido con Fabric... esto puede tomar un momento"):
+    # Entradas según tipo seleccionado
+    if menu_opcion == "Fabric":
         if input_type == "Texto":
-            # Aseguramos el prompt para manejar caracteres especiales
-            safe_prompt = shlex.quote(prompt)
-
-            comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name} --language=es'
-
-            # Imprimimos el comando
-            st.code(comando, language="bash")
-
-            # Ejecutamos el comando usando 'bash' para interpretar el pipe
-            resultado = subprocess.run(['bash', '-c', comando], capture_output=True, text=True)
+            prompt = st.text_area("Ingresa tu texto:", "Haz un chiste con manzanas", height=150)
         elif input_type == "YouTube":
-            comando = (
-                f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
+            prompt = st.text_input(
+                "Ingresa la URL del video de YouTube:",
+                "https://www.youtube.com/watch?v=5rUa0wGzgdA",
             )
-
-            st.code(comando, language="bash")
-
-            resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
         else:  # URL
-            comando = (
-                f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
+            prompt = st.text_input(
+                "Ingresa la URL:",
+                "https://medium.com/stackademic/16-killer-web-applications-to-boost-your-workflow-with-ai-38153ace9352",
             )
 
-            st.code(comando, language="bash")
 
-            resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
+    st.write("📝 La respuesta siempre será en español gracias al parámetro `--language=es`")
 
-        if resultado.returncode != 0:
-            st.error(f"Error al ejecutar el comando:\n{resultado.stderr}")
-        else:
-            st.success("¡Contenido generado con éxito!")
+    if st.button("Generar contenido"):
+        with st.spinner("Generando contenido con Fabric... esto puede tomar un momento"):
+            if input_type == "Texto":
+                # Aseguramos el prompt para manejar caracteres especiales
+                safe_prompt = shlex.quote(prompt)
+                comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name} --language=es'
+                st.code(comando, language="bash")
+                # Ejecutamos el comando usando 'bash' para interpretar el pipe
+                resultado = subprocess.run(['bash', '-c', comando], capture_output=True, text=True)
             
-            st.subheader("Resultado:")
-            st.text_area("", value=resultado.stdout, height=300)
+            elif input_type == "YouTube":
+                comando = f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
+                st.code(comando, language="bash")
+                resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
+            
+            else:  # URL
+                comando = f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
+                st.code(comando, language="bash")
+                resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"resultado_{timestamp}.md"
-            filepath = os.path.join("resultados", filename)
+            if resultado.returncode != 0:
+                st.error(f"Error al ejecutar el comando:\n{resultado.stderr}")
+            else:
+                st.success("¡Contenido generado con éxito!")
+                
+                st.subheader("Resultado:")
+                st.text_area("", value=resultado.stdout, height=300)
 
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(resultado.stdout)
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"resultado_{timestamp}.md"
+                filepath = os.path.join("resultados", filename)
 
-            pdf_filename = filename.replace(".md", ".pdf")
-            pdf_filepath = os.path.join("resultados", pdf_filename)
-            markdown_to_pdf(filepath, pdf_filepath)
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(resultado.stdout)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(
-                    get_binary_file_downloader_html(filepath, filename), unsafe_allow_html=True
+                pdf_filename = filename.replace(".md", ".pdf")
+                pdf_filepath = os.path.join("resultados", pdf_filename)
+                markdown_to_pdf(filepath, pdf_filepath)
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown(
+                        get_binary_file_downloader_html(filepath, filename), 
+                        unsafe_allow_html=True
+                    )
+                with col2:
+                    st.markdown(
+                        get_binary_file_downloader_html(pdf_filepath, pdf_filename),
+                        unsafe_allow_html=True,
+                    )
+
+# Mostrar contenido del módulo de Trascripción
+if menu_opcion == "Trascripción":
+    st.title("Transcriptor de Audio/Video con Whisper")
+
+    st.write("Sube un archivo de audio o video (mp3, wav, mp4, etc.) y descarga la transcripción en texto.")
+
+    archivo = st.file_uploader("Selecciona tu archivo", type=["mp3", "wav", "mp4", "m4a", "ogg", "flac"])
+
+    if archivo is not None:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("Transcribir"):
+                import time
+                start_time = time.time()
+                with st.spinner("Transcribiendo, esto puede tardar unos minutos..."):
+                    texto = transcribir_archivo(archivo)
+                elapsed = time.time() - start_time
+                st.success("¡Transcripción completada!")
+                st.text_area("Transcripción", texto, height=300)
+                st.download_button(
+                    label="Descargar transcripción",
+                    data=texto,
+                    file_name=f"{os.path.splitext(archivo.name)[0]}_transcripcion.txt",
+                    mime="text/plain"
                 )
-            with col2:
-                st.markdown(
-                    get_binary_file_downloader_html(pdf_filepath, pdf_filename),
-                    unsafe_allow_html=True,
+                # Estadísticas
+                st.markdown("**Estadísticas de transcripción:**")
+                st.write(f"- Tiempo de procesamiento: {format_time(elapsed)}")
+                st.write(f"- Peso del archivo de entrada: {format_size(archivo.size)}")
+                st.write(f"- Tamaño del archivo de salida: {format_size(len(texto.encode('utf-8')))}")
+                st.write(f"- Cantidad de líneas: {len(texto.splitlines())}")
+                # Duración del audio/video
+                try:
+                    import whisper
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+                        temp.write(archivo.getvalue())
+                        temp_path = temp.name
+                    model = whisper.load_model("base")
+                    result = model.transcribe(temp_path, language="es")
+                    st.write(f"- Duración del audio/video: {format_time(result['duration'])}")
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+        with col2:
+            if st.button("Generar subtítulos SRT"):
+                import time
+                start_time = time.time()
+                with st.spinner("Generando subtítulos, esto puede tardar unos minutos..."):
+                    srt_content = generar_srt(archivo)
+                elapsed = time.time() - start_time
+                st.success("¡Subtítulos SRT generados!")
+                st.download_button(
+                    label="Descargar subtítulos SRT",
+                    data=srt_content,
+                    file_name=f"{os.path.splitext(archivo.name)[0]}.srt",
+                    mime="text/plain"
                 )
+                # Estadísticas
+                st.markdown("**Estadísticas de subtítulos SRT:**")
+                st.write(f"- Tiempo de procesamiento: {format_time(elapsed)}")
+                st.write(f"- Peso del archivo de entrada: {format_size(archivo.size)}")
+                st.write(f"- Tamaño del archivo de salida: {format_size(len(srt_content.encode('utf-8')))}")
+                st.write(f"- Cantidad de líneas: {len(srt_content.splitlines())}")
+                # Duración del audio/video
+                try:
+                    import whisper
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+                        temp.write(archivo.getvalue())
+                        temp_path = temp.name
+                    model = whisper.load_model("base")
+                    result = model.transcribe(temp_path, language="es")
+                    st.write(f"- Duración del audio/video: {format_time(result['duration'])}")
+                    os.remove(temp_path)
+                except Exception:
+                    pass
+
+        with col3:
+            if st.button("Generar subtítulos TXT"):
+                import time
+                start_time = time.time()
+                with st.spinner("Generando subtítulos TXT, esto puede tardar unos minutos..."):
+                    txt_content = generar_subtitulos_txt(archivo)
+                elapsed = time.time() - start_time
+                st.success("¡Subtítulos TXT generados!")
+                st.download_button(
+                    label="Descargar subtítulos TXT",
+                    data=txt_content,
+                    file_name=f"{os.path.splitext(archivo.name)[0]}_subtitulos.txt",
+                    mime="text/plain"
+                )
+                # Estadísticas
+                st.markdown("**Estadísticas de subtítulos TXT:**")
+                st.write(f"- Tiempo de procesamiento: {format_time(elapsed)}")
+                st.write(f"- Peso del archivo de entrada: {format_size(archivo.size)}")
+                st.write(f"- Tamaño del archivo de salida: {format_size(len(txt_content.encode('utf-8')))}")
+                st.write(f"- Cantidad de líneas: {len(txt_content.splitlines())}")
+                # Duración del audio/video
+                try:
+                    import whisper
+                    import tempfile
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(archivo.name)[1]) as temp:
+                        temp.write(archivo.getvalue())
+                        temp_path = temp.name
+                    model = whisper.load_model("base")
+                    result = model.transcribe(temp_path, language="es")
+                    st.write(f"- Duración del audio/video: {format_time(result['duration'])}")
+                    os.remove(temp_path)
+                except Exception:
+                    pass
 
 # Información adicional en el pie de página
 st.markdown("---")

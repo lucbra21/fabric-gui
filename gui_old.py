@@ -395,12 +395,8 @@ menu_opcion = st.sidebar.radio(
 
 # Mostrar contenido según la opción del menú
 if menu_opcion == "Fabric":
-    # Crear directorio para resultados si no existe
-    if not os.path.exists("resultados"):
-        os.makedirs("resultados")
-
-    st.title("Generador de contenido con Fabric AI")
-
+    
+    # Mostrar opciones de archivos generados en la barra lateral
     st.sidebar.title("Opciones")
     show_files = st.sidebar.button("Mostrar archivos generados")
 
@@ -454,20 +450,21 @@ if menu_opcion == "Fabric":
         model_name = fabric_modelo
 
     # Entradas según tipo seleccionado
-    if input_type == "Texto":
-        prompt = st.text_area("Ingresa tu texto:", "Haz un chiste con manzanas", height=150)
-    elif input_type == "YouTube":
-        prompt = st.text_input(
-            "Ingresa la URL del video de YouTube:",
-            "https://www.youtube.com/watch?v=5rUa0wGzgdA",
-        )
-    else:  # URL
-        prompt = st.text_input(
-            "Ingresa la URL:",
-            "https://medium.com/stackademic/16-killer-web-applications-to-boost-your-workflow-with-ai-38153ace9352",
-        )
+    if menu_opcion == "Fabric":
+        if input_type == "Texto":
+            prompt = st.text_area("Ingresa tu texto:", "Haz un chiste con manzanas", height=150)
+        elif input_type == "YouTube":
+            prompt = st.text_input(
+                "Ingresa la URL del video de YouTube:",
+                "https://www.youtube.com/watch?v=5rUa0wGzgdA",
+            )
+        else:  # URL
+            prompt = st.text_input(
+                "Ingresa la URL:",
+                "https://medium.com/stackademic/16-killer-web-applications-to-boost-your-workflow-with-ai-38153ace9352",
+            )
 
-    # Añadir instrucción para responder en español
+
     st.write("📝 La respuesta siempre será en español gracias al parámetro `--language=es`")
 
     if st.button("Generar contenido"):
@@ -475,36 +472,26 @@ if menu_opcion == "Fabric":
             if input_type == "Texto":
                 # Aseguramos el prompt para manejar caracteres especiales
                 safe_prompt = shlex.quote(prompt)
-
                 comando = f'echo {safe_prompt} | fabric --pattern {fabric_command} --model {model_name} --language=es'
-
-                # Imprimimos el comando
                 st.code(comando, language="bash")
-
                 # Ejecutamos el comando usando 'bash' para interpretar el pipe
                 resultado = subprocess.run(['bash', '-c', comando], capture_output=True, text=True)
+            
             elif input_type == "YouTube":
-                comando = (
-                    f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
-                )
-
+                comando = f"fabric -y '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
                 st.code(comando, language="bash")
-
                 resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
+            
             else:  # URL
-                comando = (
-                    f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
-                )
-
+                comando = f"fabric -u '{prompt}' --pattern {fabric_command} --model {model_name} --language=es"
                 st.code(comando, language="bash")
-
                 resultado = subprocess.run(["bash", "-c", comando], capture_output=True, text=True)
 
             if resultado.returncode != 0:
                 st.error(f"Error al ejecutar el comando:\n{resultado.stderr}")
             else:
                 st.success("¡Contenido generado con éxito!")
-
+                
                 st.subheader("Resultado:")
                 st.text_area("", value=resultado.stdout, height=300)
 
@@ -522,16 +509,14 @@ if menu_opcion == "Fabric":
                 col1, col2 = st.columns(2)
                 with col1:
                     st.markdown(
-                        get_binary_file_downloader_html(filepath, filename), unsafe_allow_html=True
+                        get_binary_file_downloader_html(filepath, filename), 
+                        unsafe_allow_html=True
                     )
                 with col2:
                     st.markdown(
                         get_binary_file_downloader_html(pdf_filepath, pdf_filename),
                         unsafe_allow_html=True,
                     )
-
-    # Información adicional en el pie de página
-    st.markdown("---")
 
 # Mostrar contenido del módulo de Trascripción
 if menu_opcion == "Trascripción":
